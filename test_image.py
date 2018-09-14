@@ -107,7 +107,7 @@ with tf.Graph().as_default():
                     emb_array[0, :] = sess.run(embeddings, feed_dict=feed_dict)
                     predictions = model.predict_proba(emb_array)
                     print(predictions)
-                    best_class_indices = np.argmax(predictions, axis=1)
+                    best_class_indices = np.argmin(predictions, axis=1)
                     # print(best_class_indices)
                     best_class_probabilities = predictions[np.arange(len(best_class_indices)), best_class_indices]
                     print(best_class_probabilities)

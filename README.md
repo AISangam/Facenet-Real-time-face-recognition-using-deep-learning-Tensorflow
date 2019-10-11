@@ -1,6 +1,6 @@
 # Facenet: Real-time face recognition using deep learning Tensorflow 
 
-This is completly based on deep learning nueral network and implented using Tensorflow framework. Here you will get how to implement fastly and you can find code at github and uses is demonstrated at YouTube.
+This is completely based on deep learning neural network and implemented using Tensorflow framework. Here you will get how to implement fastly and you can find code at github and uses is demonstrated at YouTube.
 
 ### Installation Python Libraries:
 

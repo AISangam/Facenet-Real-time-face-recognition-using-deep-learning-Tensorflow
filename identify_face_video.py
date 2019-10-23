@@ -23,12 +23,12 @@ with tf.Graph().as_default():
     with sess.as_default():
         pnet, rnet, onet = detect_face.create_mtcnn(sess, npy)
 
-        minsize = 20  # minimum size of face
-        threshold = [0.6, 0.7, 0.7]  # three steps's threshold
-        factor = 0.709  # scale factor
+        minsize = 30  #20 minimum size of face
+        threshold = [0.6, 0.7, 0.7]  #[0.6, 0.7, 0.7] three steps's threshold
+        factor = 0.709  #0.709 scale factor
         margin = 44
-        frame_interval = 3
-        batch_size = 1000
+        frame_interval = 20 #3
+        batch_size = 1000 #1000
         image_size = 182
         input_image_size = 160
         
@@ -47,6 +47,7 @@ with tf.Graph().as_default():
         with open(classifier_filename_exp, 'rb') as infile:
             (model, class_names) = pickle.load(infile)
 
+        #cap = cv2.VideoCapture()
         video_capture = cv2.VideoCapture(input_video)
         c = 0
 
@@ -92,39 +93,59 @@ with tf.Graph().as_default():
                         if bb[i][0] <= 0 or bb[i][1] <= 0 or bb[i][2] >= len(frame[0]) or bb[i][3] >= len(frame):
                             print('Face is very close!')
                             continue
-
-                        cropped.append(frame[bb[i][1]:bb[i][3], bb[i][0]:bb[i][2], :])
-                        cropped[i] = facenet.flip(cropped[i], False)
-                        scaled.append(misc.imresize(cropped[i], (image_size, image_size), interp='bilinear'))
-                        scaled[i] = cv2.resize(scaled[i], (input_image_size,input_image_size),
-                                               interpolation=cv2.INTER_CUBIC)
-                        scaled[i] = facenet.prewhiten(scaled[i])
-                        scaled_reshape.append(scaled[i].reshape(-1,input_image_size,input_image_size,3))
-                        feed_dict = {images_placeholder: scaled_reshape[i], phase_train_placeholder: False}
-                        emb_array[0, :] = sess.run(embeddings, feed_dict=feed_dict)
-                        predictions = model.predict_proba(emb_array)
-                        print(predictions)
-                        best_class_indices = np.argmax(predictions, axis=1)
-                        best_class_probabilities = predictions[np.arange(len(best_class_indices)), best_class_indices]
+                        try:
+                            cropped.append(frame[bb[i][1]:bb[i][3], bb[i][0]:bb[i][2], :])
+                            cropped[i] = facenet.flip(cropped[i], False)
+                        
+                        
+                            scaled.append(misc.imresize(cropped[i], (image_size, image_size), interp='bilinear'))
+                            scaled[i] = cv2.resize(scaled[i], (input_image_size,input_image_size),
+                                                   interpolation=cv2.INTER_CUBIC)
+                            scaled[i] = facenet.prewhiten(scaled[i])
+                            scaled_reshape.append(scaled[i].reshape(-1,input_image_size,input_image_size,3))
+                            feed_dict = {images_placeholder: scaled_reshape[i], phase_train_placeholder: False}
+                            emb_array[0, :] = sess.run(embeddings, feed_dict=feed_dict)
+                            predictions = model.predict_proba(emb_array)
+                            print(predictions)
+                            best_class_indices = np.argmax(predictions, axis=1)
+                            best_class_probabilities = predictions[np.arange(len(best_class_indices)), best_class_indices]
+                        except Exception as e:
+                            pass
                         # print("predictions")
                         print(best_class_indices,' with accuracy ',best_class_probabilities)
 
-                        # print(best_class_probabilities)
+                        print("best_class_probabilities", end=" ")
+                        print(best_class_probabilities)
                         if best_class_probabilities>0.53:
-                            cv2.rectangle(frame, (bb[i][0], bb[i][1]), (bb[i][2], bb[i][3]), (0, 255, 0), 2)    #boxing face
+                            cv2.rectangle(frame, (bb[i][0], bb[i][1]), (bb[i][2], bb[i][3]), (255, 255, 255), 2)    #boxing face
 
                             #plot result idx under box
                             text_x = bb[i][0]
                             text_y = bb[i][3] + 20
+                            print("="*50)
                             print('Result Indices: ', best_class_indices[0])
                             print(HumanNames)
+                            
                             for H_i in HumanNames:
-                                if HumanNames[best_class_indices[0]] == H_i:
-                                    result_names = HumanNames[best_class_indices[0]]
-                                    cv2.putText(frame, result_names, (text_x, text_y), cv2.FONT_HERSHEY_COMPLEX_SMALL,
-                                                1, (0, 0, 255), thickness=1, lineType=2)
+                                try:
+                                    if (HumanNames[best_class_indices[0]] == H_i):
+                                        if best_class_probabilities[0]>0.57:
+                                            result_names = HumanNames[best_class_indices[0]]
+                                            box_color=(255,255,255)
+                                        else:
+                                            result_names="Unknown"
+                                            box_color=(0,0,255)
+                                        cv2.putText(frame, result_names, (text_x, text_y), cv2.FONT_HERSHEY_COMPLEX_SMALL,
+                                                    1, box_color, thickness=1, lineType=2)
+                                except Exception as e:
+                                    pass
+                                    
+                        
+
                 else:
                     print('Alignment Failure')
+
+                    #print('Unknown')
             # c+=1
             cv2.imshow('Video', frame)
 
